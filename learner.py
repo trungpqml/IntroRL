@@ -1,5 +1,5 @@
 from config import cfg
-from numpy import np
+import numpy as np
 
 
 class Q_learner(object):
@@ -10,7 +10,7 @@ class Q_learner(object):
         # number of bin to discretize each observation dim
         self.obs_bins = cfg.num_discrete_bins
         self.bin_width = (self.obs_high-self.obs_low)/self.obs_bins
-        self.action_shape = env.action_shape.n
+        self.action_shape = env.action_space.n
 
         # Q-value of size 31 x 31 x 3
         self.Q = np.zeros(

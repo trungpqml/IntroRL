@@ -3,6 +3,7 @@ import gym
 from learner import Q_learner
 from os.path import join, exists
 from os import makedirs
+import numpy as np
 
 
 def train(agent, env):
