@@ -18,3 +18,9 @@ class Q_learner(object):
         self.alpha = cfg.alpha
         self.gamma = cfg.gamma
         self.epsilon = cfg.epsilon_max
+
+    def discretize(self, obs):
+        return tuple(((obs - self.obs_low)/self.bin_width).astype(int))
+
+    def get_action(self, obs):
+        
