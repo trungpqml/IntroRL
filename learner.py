@@ -17,10 +17,18 @@ class Q_learner(object):
             (self.obs_bins+1, self.obs_bins+1, self.action_shape))
         self.alpha = cfg.alpha
         self.gamma = cfg.gamma
+        self.epsilon_min = cfg.epsilon_min
         self.epsilon = cfg.epsilon_max
+        self.epsilon_decay = cfg.epsilon_decay
 
     def discretize(self, obs):
         return tuple(((obs - self.obs_low)/self.bin_width).astype(int))
 
     def get_action(self, obs):
-        
+        discretized_obs = self.discretize(obs)
+        if self.epsilon > self.epsilon_min:
+            self.epsilon -= self.epsilon_decay
+        if np.random.random() > self.epsilon:
+            return np.argmax(self.Q[discretized_obs])
+        else:
+            return np.random.choice([a for a in range(self.action_shape)])
