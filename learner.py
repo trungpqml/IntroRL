@@ -32,3 +32,10 @@ class Q_learner(object):
             return np.argmax(self.Q[discretized_obs])
         else:
             return np.random.choice([a for a in range(self.action_shape)])
+
+    def learn(self, obs, action, reward, next_obs):
+        discretized_obs = self.discretize(obs)
+        discretized_next_obs = self.discretize(next_obs)
+        td_target = reward + self.gamma*np.max(self.Q[discretized_next_obs])
+        td_error = td_target - self.Q[discretized_obs][action]
+        self.Q[discretized_obs][action] += self.alpha*td_error
