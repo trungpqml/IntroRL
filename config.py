@@ -8,6 +8,7 @@ class Config:
     alpha = 0.05  # learning rate
     gamma = 0.98  # discount factor
     num_discrete_bins = 30
+    num_test_episodes = 1000
 
 
 cfg = Config()

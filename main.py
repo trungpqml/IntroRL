@@ -1,4 +1,8 @@
 from config import cfg
+import gym
+from learner import Q_learner
+from os.path import join, exists
+from os import makedirs
 
 
 def train(agent, env):
@@ -30,3 +34,18 @@ def test(agent, env, policy):
         obs = next_obs
         total_reward += reward
     return total_reward
+
+
+if __name__ == "__main__":
+    env = gym.make('MountainCar-v0')
+    agent = Q_learner(env)
+    learned_policy = train(agent, env)
+
+    gym_monitor_path = join(".", "gym_monitor_output")
+    if not exists(gym_monitor_path):
+        makedirs(gym_monitor_path)
+
+    env = gym.wrappers.Monitor(env, gym_monitor_path, force=True)
+    for _ in range(cfg.num_test_episodes):
+        test(agent, env, learned_policy)
+    env.close()
