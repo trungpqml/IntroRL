@@ -1,6 +1,6 @@
 import numpy as np
 from config import cfg
-from learner import Q_Learner
+from learner import Shallow_Q_Learner
 import gym
 from os.path import join, exists
 from os import mkdir

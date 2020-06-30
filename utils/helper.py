@@ -3,7 +3,6 @@ import sys
 from gym.spaces import *
 from config import cfg
 
-
 def run_gym_env(env):
     env.reset()
     for _ in range(50):
@@ -37,6 +36,5 @@ def overview(env):
 
 
 if __name__ == "__main__":
-    for name in "MountainCar-v0", "CartPole-v0":
-        env = gym.make(name)
-        overview(env)
+    env = gym.make(cfg.env_name)
+    overview(env)
