@@ -141,3 +141,32 @@ class DeepQLearner:
         file_name = self.params['load_dir'] + "DQL_" + env_name + ".ptm"
         self.Q.load_state_dict(torch.load(file_name))
         print(f"Loaded Q model state from {file_name}")
+
+
+if __name__ == "__main__":
+    env_conf = params_manager.get_agent_params()
+    env_conf['env_name'] = args.env_name
+    custom_region_available = False
+    for key, value in env_conf['useful_region'].items():
+        if key in args.env_name:
+            env_conf['useful_region'] = value
+            custom_region_available = True
+            break
+    if custom_region_available is not True:
+        env_conf['useful_region'] = env_conf['useful_region']['Default']
+        print(f"Using env_conf: {env_conf}")
+        env = Atari.make_env(args.env_name, env_conf)
+        observation_shape = env.observation_space.shape
+        action_shape = env.action_space.n
+        agent_params = params_manager.get_agent_params()
+        agent = DeepQLearner(observation_shape, action_shape, agent_params)
+        if agent_params['load_trained_model']:
+            try:
+                agent.load(env_conf['env_name'])
+            except FileNotFoundError:
+                print(
+                    "WARNING: No trained model found for this environment. Training from scratch.")
+        first_episode = True
+        episode_rewards = list()
+        for episode in range(agent_params['max_num_episodes']):
+            
