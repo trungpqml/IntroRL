@@ -5,6 +5,6 @@ Experience = namedtuple(
     'Experience', ['obs', 'action', 'reward', 'next_obs', 'done'])
 
 
-class ExperienceMemroy:
+class ExperienceMemory:
     def __init__(self):
         pass
