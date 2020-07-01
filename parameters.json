@@ -1,0 +1,18 @@
+{
+    "agent": {
+        "max_num_episodes": 70000,
+        "max_steps_per_episode": 300
+    },
+    "env": {
+        "type": "Atari",
+        "episodic_life": "True",
+        "clip_reward": "True",
+        "useful_region": {
+            "Default": {
+                "crop1": 34,
+                "crop2": 34,
+                "dimension2": 80
+            }
+        }
+    }
+}
