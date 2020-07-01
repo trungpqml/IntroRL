@@ -1,7 +1,7 @@
 import torch
 
 
-class SLP:
+class SLP(torch.nn.Module):
     """A Single Layer Perception (SLP) class to approximate
     """
 
@@ -13,8 +13,9 @@ class SLP:
         """
         super().__init__()
         self.device = device
-        self.input_shape = input_shape
+        self.input_shape = input_shape[0]
         self.hidden_shape = 40
+        self.output_shape = output_shape
         self.linear = torch.nn.Linear(self.input_shape, self.hidden_shape)
         self.out = torch.nn.Linear(self.hidden_shape, self.output_shape)
 
