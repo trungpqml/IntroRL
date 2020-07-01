@@ -51,6 +51,7 @@ if __name__ == "__main__":
         obs = env.reset()
         cumulative_reward = 0.0
         for step in range(cfg.max_num_steps):
+            env.render()
             action = agent.get_action(obs)
             next_obs, reward, done, info = env.step(action)
             agent.learn(obs, action, reward, next_obs)
