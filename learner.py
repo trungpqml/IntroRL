@@ -70,8 +70,35 @@ class DeepQLearner:
             initial_value=self.epsilon_max, final_value=self.epsilon_min, max_steps=self.params['epsilon_decay_final_step'])
         self.step_num = 0
 
-    def get_action(self):
-        pass
+        self.memory = ExperienceMemory(capacity=int(
+            self.params['experience_memory_capacity']))
+
+    def get_action(self, obs):
+        if len(obs.shape) == 3:
+            if obs.shape[2] < obs.shape[0]:
+                obs = obs.reshape(obs.shape[2], obs.shape[1], obs.shape[0])
+            obs = np.expand_dims(obs, 0)
+        return self.policy(obs)
+
+    def epsilon_greedy_Q(self, obs):
+        writer.add_scalar(
+            "DQL/epsilon", self.epsilon_decay(self.step_num), self.step_num)
+        self.step_num += 1
+        if random.random() < self.epsilon_decay(self.step_num):
+            action = random.choice([i for i in range(self.action_shape)])
+        else:
+            action = np.argmax(self.Q(obs).data.to(device).numpy())
+        return action
+
+    def learn(self, obs, action, reward, next_obs, done):
+        if done:
+            td_target = reward + 0.0
+        else:
+            td_target = reward + self.gamma*torch.max(self.Q(next_obs))
+        td_error = td_target - self.Q(s)[a]
+        self.Q_optimizer.zero_grad()
+        td_error.backward()
+        self.Q_optimizer.step()
 
     def learn_from_batch_experience(self, experiences):
         batch_xp = Experience(*zip(*experiences))
@@ -99,3 +126,18 @@ class DeepQLearner:
         td_error.mean().backward()
         writer.add_scalar("DQL/td_error", td_error.mean(), self.step_num)
         self.Q_optimizer.step()
+
+    def replay_experience(self, batch_size=None):
+        batch_size = batch_size if batch_size is not None else self.params['replay_batch_size']
+        experience_batch = self.memory.sample(batch_size)
+        self.learn_from_batch_experience(experience_batch)
+
+    def save(self, env_name):
+        file_name = self.params['save_dir'] + "DQL_" + env_name + ".ptm"
+        torch.save(self.Q.state_dict(), file_name)
+        print(f"Agent's Q model state saved to {file_name}")
+
+    def load(self, env_name):
+        file_name = self.params['load_dir'] + "DQL_" + env_name + ".ptm"
+        self.Q.load_state_dict(torch.load(file_name))
+        print(f"Loaded Q model state from {file_name}")
