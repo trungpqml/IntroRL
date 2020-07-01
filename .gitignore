@@ -1,0 +1,8 @@
+
+.vscode/
+
+*.pyc
+
+.DS_Store
+
+gym_monitor_output/
