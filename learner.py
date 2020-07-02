@@ -169,4 +169,39 @@ if __name__ == "__main__":
         first_episode = True
         episode_rewards = list()
         for episode in range(agent_params['max_num_episodes']):
-            
+            obs = env.reset()
+            cumulative_reward = 0.0
+            done = False
+            step = 0
+            while not done:
+                if env_conf['render']:
+                    env.render()
+                action = agent.get_action(obs)
+                next_obs, reward, done, info = env.step(action)
+                agent.memory.store(Experience(
+                    obs, action, reward, next_obs, done))
+                obs = next_obs
+                cumulative_reward += reward
+                step += 1
+                global_step_num += 1
+                if done is True:
+                    if first_episode:
+                        max_reward = cumulative_reward
+                        first_episode = False
+                        episode_rewards.append(cumulative_reward)
+                    if cumulative_reward > max_reward:
+                        max_reward = cumulative_reward
+                        agent.save(env_conf['env_name'])
+                    print(
+                        f"\nEpisode#{episode}\tend in {step+1} steps\treward = {cumulative_reward}, mean reward = {np.mean(episode_rewards):.3f}\tbest reward = {max_reward}")
+                    writer.add_scalar("main/ep_reward",
+                                      cumulative_reward, global_step_num)
+                    writer.add_scalar("main/mean_ep_reward",
+                                      np.mean(episode_rewards), global_step_num)
+                    writer.add_scalar("main/max_ep_reward",
+                                      max_reward, global_step_num)
+                    if agent.memory.get_size() >= 2*agent_params['replay_batch_size']:
+                        agent.replay_experience()
+                    break
+    env.close()
+    writer.close()
