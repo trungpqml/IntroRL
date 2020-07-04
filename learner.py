@@ -17,16 +17,28 @@ args = ArgumentParser("learner")
 args.add_argument(
     "--params-file", help="Path to the parameters JSON file. Default is parameters.json", default="parameters.json", type=str, metavar="PFILE")
 args.add_argument(
-    "--env-name", help="ID of the Atari environment available in OpenAI Gym. Default is Pong-v0", default="Pong-v0", type=str, metavar="ENV")
+    "--env", help="ID of the Atari environment available in OpenAI Gym. Default is Pong-v0", default="Pong-v0", type=str, metavar="ENV")
+args.add_argument("--gpu-id", help="GPU device ID to use. Default is 0",
+                  default=0, type=int, metavar="GPU_ID")
+args.add_argument("--render", help="Render environment to Screen. Off by default",
+                  action="store_true", default=False)
+args.add_argument("--test", help="Test mode. Used for playing without learning. Off by default",
+                  action="store_true", default=False)
+args.add_argument("--record", help="Enable recording (video & stat) of the agent's performance",
+                  action="store_true", default=False)
+args.add_argument("--recording-output-dir",
+                  help="Directory to store monitor output. Default=./trained_models/results", default="./train_models/results")
+
 args = args.parse_args()
 
 params_manager = ParamsManager(args.params_file)
 seed = params_manager.get_agent_params()['seed']
 summary_file_path_prefix = params_manager.get_agent_params()[
     'summary_file_path_prefix']
-summary_file_name = summary_file_path_prefix + args.env_name + \
+summary_file_path = summary_file_path_prefix + args.env + \
     "_" + datetime.now().strftime("%y-%m-%d-%H-%M")
-writer = SummaryWriter(summary_file_name)
+writer = SummaryWriter(summary_file_path)
+
 global_step_num = 0
 use_cuda = params_manager.get_agent_params()['use_cuda']
 device = torch.device("cuda" if torch.cuda.is_available()
