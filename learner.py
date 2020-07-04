@@ -20,21 +20,21 @@ from tensorboardX import SummaryWriter
 
 
 # Argument Parser Setting
-args = ArgumentParser("learner")
+args = ArgumentParser('learner')
 args.add_argument(
-    "--params-file", help="Path to the parameters JSON file. Default is parameters.json", default="parameters.json", type=str, metavar="PFILE")
+    '--params-file', help='Path to the parameters JSON file. Default is parameters.json', default='parameters.json', type=str, metavar='PFILE')
 args.add_argument(
-    "--env", help="ID of the Atari environment available in OpenAI Gym. Default is Pong-v0", default="Pong-v0", type=str, metavar="ENV")
-args.add_argument("--gpu-id", help="GPU device ID to use. Default is 0",
-                  default=0, type=int, metavar="GPU_ID")
-args.add_argument("--render", help="Render environment to Screen. Off by default",
-                  action="store_true", default=False)
-args.add_argument("--test", help="Test mode. Used for playing without learning. Off by default",
-                  action="store_true", default=False)
-args.add_argument("--record", help="Enable recording (video & stat) of the agent's performance",
-                  action="store_true", default=False)
-args.add_argument("--recording-output-dir",
-                  help="Directory to store monitor output. Default=./trained_models/results", default="./train_models/results")
+    '--env', help='ID of the Atari environment available in OpenAI Gym. Default is Pong-v0', default='Pong-v0', type=str, metavar='ENV')
+args.add_argument('--gpu-id', help='GPU device ID to use. Default is 0',
+                  default=0, type=int, metavar='GPU_ID')
+args.add_argument('--render', help='Render environment to Screen. Off by default',
+                  action='store_true', default=False)
+args.add_argument('--test', help='Test mode. Used for playing without learning. Off by default',
+                  action='store_true', default=False)
+args.add_argument('--record', help="Enable recording (video & stat) of the agent's performance",
+                  action='store_true', default=False)
+args.add_argument('--recording-output-dir',
+                  help='Directory to store monitor output. Default=./trained_models/results', default='./train_models/results')
 
 args = args.parse_args()
 
@@ -44,18 +44,18 @@ seed = params_manager.get_agent_params()['seed']
 summary_file_path_prefix = params_manager.get_agent_params()[
     'summary_file_path_prefix']
 summary_file_path = summary_file_path_prefix + args.env + \
-    "_" + datetime.now().strftime("%y-%m-%d-%H-%M")
+    '_' + datetime.now().strftime('%y-%m-%d-%H-%M')
 writer = SummaryWriter(summary_file_path)
-params_manager.export_env_params(summary_file_path + "/" + "env_params.json")
+params_manager.export_env_params(summary_file_path + '/' + 'env_params.json')
 params_manager.export_agent_params(
-    summary_file_path + "/" + "agent_params.json")
+    summary_file_path + '/' + 'agent_params.json')
 
 global_step_num = 0
 
 # GPU Setting
 use_cuda = params_manager.get_agent_params()['use_cuda']
-device = torch.device("cuda:" + str(args.gpu_id) if torch.cuda.is_available()
-                      and use_cuda else "cpu")
+device = torch.device('cuda:' + str(args.gpu_id) if torch.cuda.is_available()
+                      and use_cuda else 'cpu')
 torch.manual_seed(seed)
 np.random.seed(seed)
 if torch.cuda.is_available() and use_cuda:
@@ -76,8 +76,8 @@ class DeepQLearner:
         self.params = params
         self.gamma = self.params['gamma']
         self.learning_rate = self.params['lr']
-        self.best_mean_reward = -float("inf")
-        self.best_reward = -float("inf")
+        self.best_mean_reward = -float('inf')
+        self.best_reward = -float('inf')
         self.training_steps_completed = 0
 
         if len(self.state_shape) == 1:
@@ -114,7 +114,7 @@ class DeepQLearner:
 
     def epsilon_greedy_Q(self, obs):
         writer.add_scalar(
-            "DQL/epsilon", self.epsilon_decay(self.step_num), self.step_num)
+            'DQL/epsilon', self.epsilon_decay(self.step_num), self.step_num)
         self.step_num += 1
         if random.random() < self.epsilon_decay(self.step_num) and not self.params['test']:
             action = random.choice([i for i in range(self.action_shape)])
@@ -163,7 +163,7 @@ class DeepQLearner:
 
         self.Q_optimizer.zero_grad()
         td_error.mean().backward()
-        writer.add_scalar("DQL/td_error", td_error.mean(), self.step_num)
+        writer.add_scalar('DQL/td_error', td_error.mean(), self.step_num)
         self.Q_optimizer.step()
 
     def replay_experience(self, batch_size=None):
@@ -173,7 +173,7 @@ class DeepQLearner:
         self.training_steps_completed += 1
 
     def save(self, env_name):
-        file_name = self.params['save_dir'] + "DQL_" + env_name + ".ptm"
+        file_name = self.params['save_dir'] + 'DQL_' + env_name + '.ptm'
         agent_state = {'Q': self.Q.state_dict(),
                        'best_mean_reward': self.best_mean_reward,
                        'best_reward': self.best_reward
@@ -182,7 +182,7 @@ class DeepQLearner:
         print(f"Agent's state saved to {file_name}")
 
     def load(self, env_name):
-        file_name = self.params['load_dir'] + "DQL_" + env_name + ".ptm"
+        file_name = self.params['load_dir'] + 'DQL_' + env_name + '.ptm'
         agent_state = torch.load(
             file_name, map_location=lambda storage, loc: storage)
         self.Q.load_state_dict(agent_state['Q'])
@@ -194,17 +194,17 @@ class DeepQLearner:
 
 
 if __name__ == "__main__":
-    env_conf = params_manager.get_agent_params()
+    env_conf = params_manager.get_env_params()
     env_conf['env_name'] = args.env
     # In test mode let the end of game be the end of episode rather than ending episode at the end of every life
     if args.test:
         env_conf['episodic_life'] = False
 
-    reward_type = "LIFE" if env_conf['episodic_life'] else 'GAME'
+    reward_type = 'LIFE' if env_conf['episodic_life'] else 'GAME'
 
     custom_region_available = False
     for key, value in env_conf['useful_region'].items():
-        if key in args.env_name:
+        if key in args.env:
             env_conf['useful_region'] = value
             custom_region_available = True
             break
@@ -212,7 +212,7 @@ if __name__ == "__main__":
     if custom_region_available is not True:
         env_conf['useful_region'] = env_conf['useful_region']['Default']
 
-    print(f"Using env_conf: {env_conf}")
+    print(f'Using env_conf: {env_conf}')
     atari_env = False
     for game in Atari.get_game_list():
         if game.replace('_', '') in args.env.lower():
@@ -236,7 +236,7 @@ if __name__ == "__main__":
     episode_rewards = list()
     prev_checkpoint_mean_episode_reward = agent.best_mean_reward
     num_improved_episodes_before_checkpoint = 0
-    print("Using agent_params:", agent_params)
+    print('Using agent_params:', agent_params)
 
     if agent_params['load_trained_model']:
         try:
@@ -244,11 +244,11 @@ if __name__ == "__main__":
             prev_checkpoint_mean_episode_reward = agent.best_mean_reward
         except FileNotFoundError:
             print(
-                "WARNING: No trained model found for this environment. Training from scratch.")
+                'WARNING: No trained model found for this environment. Training from scratch.')
 
     episode = 0
 
-    while global_step_num <= agent_params['max_num_episodes']:
+    while global_step_num <= agent_params['max_training_steps']:
         obs = env.reset()
         cumulative_reward = 0.0
         done = False
@@ -282,13 +282,13 @@ if __name__ == "__main__":
                     num_improved_episodes_before_checkpoint = 0
 
                 print(
-                    f"\nEpisode#{episode}\tend in {step+1} steps\treward = {cumulative_reward}, mean reward = {np.mean(episode_rewards):.3f}\tbest reward = {max_reward}")
-                writer.add_scalar("main/ep_reward",
+                    f'\nEpisode#{episode}\tend in {step+1} steps\treward = {cumulative_reward}, mean reward = {np.mean(episode_rewards):.3f}\tbest reward = {agent.best_reward}')
+                writer.add_scalar('main/ep_reward',
                                   cumulative_reward, global_step_num)
-                writer.add_scalar("main/mean_ep_reward",
+                writer.add_scalar('main/mean_ep_reward',
                                   np.mean(episode_rewards), global_step_num)
-                writer.add_scalar("main/max_ep_reward",
-                                  max_reward, global_step_num)
+                writer.add_scalar('main/max_ep_reward',
+                                  agent.best_reward, global_step_num)
                 if agent.memory.get_size() >= 2*agent_params['replay_batch_size'] and not args.test:
                     agent.replay_experience()
                 break

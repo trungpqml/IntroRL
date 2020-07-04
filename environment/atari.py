@@ -4,6 +4,7 @@ import random
 import numpy as np
 import cv2
 from gym.spaces.box import Box
+from collections import deque
 
 
 def make_env(env_id, env_conf):
@@ -25,8 +26,8 @@ def make_env(env_id, env_conf):
     if env_conf['normalize_observation']:
         env = NormalizedEnv(env)
 
-    if env_conf['clip_reward']:
-        env = ClipRewardEnv(env)
+    # if env_conf['clip_reward']:
+        # env = ClipRewardEnv(env)
     return env
 
 
@@ -56,7 +57,7 @@ class ClipRewardEnv(gym.RewardWrapper):
 
 
 class AtariRescale(gym.ObservationWrapper):
-    def __init(self, env, env_conf):
+    def __init__(self, env, env_conf):
         gym.ObservationWrapper.__init__(self, env)
         self.observation_space = Box(0.0, 1.0, [1, 84, 84])
         self.conf = env_conf
@@ -142,7 +143,7 @@ class EpisodicLifeEnv(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
         self.was_real_done = True
         lives = info['ale.lives']
-        if lives < self.live and lives > 0:
+        if lives < self.lives and lives > 0:
             done = True
             self.was_real_done = False
         self.lives = lives
