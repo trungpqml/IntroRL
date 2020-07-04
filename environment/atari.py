@@ -161,3 +161,24 @@ class MaxAndSkipEnv(gym.Wrapper):
         obs = self.env.reset()
         self._obs_buffer.append(obs)
         return obs
+
+
+def make_env(env_id, env_conf):
+    env = gym.make(env_id)
+    if 'NoFrameskip' in env_id:
+        assert 'NoFrameskip' in env.spec.id
+        env = NoopResetEnv(env, noop_max=30)
+        env = MaxAndSkipEnv(env, skip=env_conf['skip_rate'])
+
+    if env_conf['episodic_life']:
+        env = EpisodicLifeEnv(env)
+
+    if 'FIRE' in env.unwrapped.get_action_meanings():
+        env = FireResetEnv(env)
+
+    env = AtariRescale(env, env_conf['useful_region'])
+    env = NormalizedEnv(env)
+
+    if env_conf['clip_reward']:
+        env = ClipRewardEnv(env)
+    return env
