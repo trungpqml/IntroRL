@@ -224,43 +224,63 @@ if __name__ == "__main__":
         print('Given environment name is not an Atari Env. Creating a Gym env')
         env = env_utils.ResizeReshapeFrames(gym.make(args.env))
 
+    if args.record:
+        env = gym.wrappers.Monitor(env, args.recording_output_dir, force=True)
+
     observation_shape = env.observation_space.shape
     action_shape = env.action_space.n
     agent_params = params_manager.get_agent_params()
+    agent_params['test'] = args.test
     agent = DeepQLearner(observation_shape, action_shape, agent_params)
+
+    episode_rewards = list()
+    prev_checkpoint_mean_episode_reward = agent.best_mean_reward
+    num_improved_episodes_before_checkpoint = 0
+    print("Using agent_params:", agent_params)
+
     if agent_params['load_trained_model']:
         try:
             agent.load(env_conf['env_name'])
+            prev_checkpoint_mean_episode_reward = agent.best_mean_reward
         except FileNotFoundError:
             print(
                 "WARNING: No trained model found for this environment. Training from scratch.")
-    first_episode = True
-    episode_rewards = list()
 
-    for episode in range(agent_params['max_num_episodes']):
+    episode = 0
+
+    while global_step_num <= agent_params['max_num_episodes']:
         obs = env.reset()
         cumulative_reward = 0.0
         done = False
         step = 0
         while not done:
-            if env_conf['render']:
+            if env_conf['render'] or args.render:
                 env.render()
             action = agent.get_action(obs)
             next_obs, reward, done, info = env.step(action)
             agent.memory.store(Experience(
                 obs, action, reward, next_obs, done))
+
             obs = next_obs
             cumulative_reward += reward
             step += 1
             global_step_num += 1
+
             if done is True:
-                if first_episode:
-                    max_reward = cumulative_reward
-                    first_episode = False
-                    episode_rewards.append(cumulative_reward)
-                if cumulative_reward > max_reward:
-                    max_reward = cumulative_reward
+                episode += 1
+                episode_rewards.append(cumulative_reward)
+
+                if cumulative_reward > agent.best_reward:
+                    agent.best_reward = cumulative_reward
+                if np.mean(episode_rewards) > prev_checkpoint_mean_episode_reward:
+                    num_improved_episodes_before_checkpoint += 1
+                if num_improved_episodes_before_checkpoint >= agent_params['save_freq_when_perf_improves']:
+                    prev_checkpoint_mean_episode_reward = np.mean(
+                        episode_rewards)
+                    agent.best_mean_reward = np.mean(episode_rewards)
                     agent.save(env_conf['env_name'])
+                    num_improved_episodes_before_checkpoint = 0
+
                 print(
                     f"\nEpisode#{episode}\tend in {step+1} steps\treward = {cumulative_reward}, mean reward = {np.mean(episode_rewards):.3f}\tbest reward = {max_reward}")
                 writer.add_scalar("main/ep_reward",
@@ -269,7 +289,7 @@ if __name__ == "__main__":
                                   np.mean(episode_rewards), global_step_num)
                 writer.add_scalar("main/max_ep_reward",
                                   max_reward, global_step_num)
-                if agent.memory.get_size() >= 2*agent_params['replay_batch_size']:
+                if agent.memory.get_size() >= 2*agent_params['replay_batch_size'] and not args.test:
                     agent.replay_experience()
                 break
     env.close()
