@@ -1,17 +1,23 @@
-import torch
+from datetime import datetime
+from argparse import ArgumentParser
 import gym
+import torch
 import random
 import numpy as np
 
 import environment.atari as Atari
+import environment.utils as env_utils
+
 from utils.params_manager import ParamsManager
 from utils.decay_schedule import LinearDecayScheduler
 from utils.experience_memory import Experience, ExperienceMemory
+import utils.weights_initializer
+
 from function_approximator.perceptron import SLP
 from function_approximator.cnn import CNN
+
 from tensorboardX import SummaryWriter
-from datetime import datetime
-from argparse import ArgumentParser
+
 
 # Argument Parser Setting
 args = ArgumentParser("learner")
@@ -70,12 +76,17 @@ class DeepQLearner:
         self.params = params
         self.gamma = self.params['gamma']
         self.learning_rate = self.params['lr']
+        self.best_mean_reward = -float("inf")
+        self.best_reward = -float("inf")
+        self.training_steps_completed = 0
+
         if len(self.state_shape) == 1:
             self.DQN = SLP
         elif len(self.state_shape) == 3:
             self.DQN = CNN
 
         self.Q = self.DQN(state_shape, action_shape, device).to(device)
+        self.Q.apply(utils.weights_initializer.xavier)
         self.Q_optimizer = torch.optim.Adam(
             self.Q.parameters(), lr=self.learning_rate)
 
