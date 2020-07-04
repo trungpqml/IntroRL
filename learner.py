@@ -94,8 +94,8 @@ class DeepQLearner:
             self.Q_target = self.DQN(
                 state_shape, action_shape, device).to(device)
         self.policy = self.epsilon_greedy_Q
-        self.epsilon_max = 1.0
-        self.epsilon_min = 0.05
+        self.epsilon_max = params['epsilon_max']
+        self.epsilon_min = params['epsilon_min']
         self.epsilon_decay = LinearDecayScheduler(
             initial_value=self.epsilon_max, final_value=self.epsilon_min, max_steps=self.params['epsilon_decay_final_step'])
         self.step_num = 0
@@ -104,6 +104,8 @@ class DeepQLearner:
             self.params['experience_memory_capacity']))
 
     def get_action(self, obs):
+        obs = np.array(obs)
+        obs = obs/255.0
         if len(obs.shape) == 3:
             if obs.shape[2] < obs.shape[0]:
                 obs = obs.reshape(obs.shape[2], obs.shape[1], obs.shape[0])
@@ -114,7 +116,7 @@ class DeepQLearner:
         writer.add_scalar(
             "DQL/epsilon", self.epsilon_decay(self.step_num), self.step_num)
         self.step_num += 1
-        if random.random() < self.epsilon_decay(self.step_num):
+        if random.random() < self.epsilon_decay(self.step_num) and not self.params['test']:
             action = random.choice([i for i in range(self.action_shape)])
         else:
             action = np.argmax(self.Q(obs).data.to(device).numpy())
@@ -124,7 +126,7 @@ class DeepQLearner:
         if done:
             td_target = reward + 0.0
         else:
-            td_target = reward + self.gamma*torch.max(self.Q(next_obs))
+            td_target = reward + self.gamma * torch.max(self.Q(next_obs))
         td_error = td_target - self.Q(s)[a]
         self.Q_optimizer.zero_grad()
         td_error.backward()
@@ -134,8 +136,12 @@ class DeepQLearner:
         batch_xp = Experience(*zip(*experiences))
         obs_batch = np.array(batch_xp.obs)
         action_batch = np.array(batch_xp.action)
+
         reward_batch = np.array(batch_xp.reward)
-        next_obs_batch = np.array(batch_xp.next_obs)
+        if self.params['clip_rewards']:  # Clip the rewards
+            reward_batch = np.sign(reward_batch)
+
+        next_obs_batch = np.array(batch_xp.next_obs)/255.0
         done_batch = np.array(batch_xp.done)
 
         if self.params['use_target_network']:
@@ -143,15 +149,18 @@ class DeepQLearner:
                 self.Q_target.load_state_dict(self.Q.state_dict())
             td_target = reward_batch + ~done_batch * \
                 np.tile(self.gamma, len(next_obs_batch)) * \
-                self.Q_target(next_obs_batch).max(1)[0].data
+                self.Q_target(next_obs_batch).max(1)[0].data.to(device).numpy()
         else:
             td_target = reward_batch + ~done_batch * \
                 np.tile(self.gamma, len(next_obs_batch)) * \
-                self.Q(next_obs_batch).detach().max(1)[0].data
-        td_target = td_target.to(device)
+                self.Q(next_obs_batch).detach().max(
+                    1)[0].data.to(device).numpy()
+
+        td_target = torch.from_numpy(td_target).to(device)
         action_idx = torch.from_numpy(action_batch).to(device)
         td_error = torch.nn.functional.mse_loss(
             self.Q(obs_batch).gather(1, action_idx.view(-1, 1)), td_target.float().unsqueeze(1))
+
         self.Q_optimizer.zero_grad()
         td_error.mean().backward()
         writer.add_scalar("DQL/td_error", td_error.mean(), self.step_num)
@@ -161,16 +170,27 @@ class DeepQLearner:
         batch_size = batch_size if batch_size is not None else self.params['replay_batch_size']
         experience_batch = self.memory.sample(batch_size)
         self.learn_from_batch_experience(experience_batch)
+        self.training_steps_completed += 1
 
     def save(self, env_name):
         file_name = self.params['save_dir'] + "DQL_" + env_name + ".ptm"
-        torch.save(self.Q.state_dict(), file_name)
-        print(f"Agent's Q model state saved to {file_name}")
+        agent_state = {'Q': self.Q.state_dict(),
+                       'best_mean_reward': self.best_mean_reward,
+                       'best_reward': self.best_reward
+                       }
+        torch.save(agent_state, file_name)
+        print(f"Agent's state saved to {file_name}")
 
     def load(self, env_name):
         file_name = self.params['load_dir'] + "DQL_" + env_name + ".ptm"
-        self.Q.load_state_dict(torch.load(file_name))
-        print(f"Loaded Q model state from {file_name}")
+        agent_state = torch.load(
+            file_name, map_location=lambda storage, loc: storage)
+        self.Q.load_state_dict(agent_state['Q'])
+        self.Q.to(device)
+        self.best_mean_reward = agent_state['best_mean_reward']
+        self.best_reward = agent_state['best_reward']
+        print(
+            f'Loaded Q model state from {file_name} which fetched a best mean reward of {self.best_mean_reward:.3f} and an all time best reward of {self.best_reward}')
 
 
 if __name__ == "__main__":
