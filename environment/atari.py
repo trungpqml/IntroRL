@@ -6,14 +6,32 @@ import cv2
 from gym.spaces.box import Box
 
 
-class ClipRewardEnv(gym.RewardWrapper):
-    def __init__(self, env):
-        gym.RewardWrapper.__init__(self, env)
+def make_env(env_id, env_conf):
+    env = gym.make(env_id)
+    if 'NoFrameskip' in env_id:
+        assert 'NoFrameskip' in env.spec.id
+        env = NoopResetEnv(env, noop_max=30)
+        env = MaxAndSkipEnv(env, skip=env_conf['skip_rate'])
 
-    def reward(self, reward):
-        """Clip rewards to be either -1, 0, or +1 based on the sign
-        """
-        return np.sign(reward)
+    if env_conf['episodic_life']:
+        env = EpisodicLifeEnv(env)
+    try:
+        if 'FIRE' in env.unwrapped.get_action_meanings():
+            env = FireResetEnv(env)
+    except AttributeError:
+        pass
+
+    env = AtariRescale(env, env_conf['useful_region'])
+    if env_conf['normalize_observation']:
+        env = NormalizedEnv(env)
+
+    if env_conf['clip_reward']:
+        env = ClipRewardEnv(env)
+    return env
+
+
+def get_game_list():
+    return atari_py.list_games()
 
 
 def process_frame_84(frame, conf):
@@ -25,6 +43,16 @@ def process_frame_84(frame, conf):
     frame = cv2.resize(frame, (84, 84))
     frame = np.reshape(frame, [1, 84, 84])
     return frame
+
+
+class ClipRewardEnv(gym.RewardWrapper):
+    def __init__(self, env):
+        gym.RewardWrapper.__init__(self, env)
+
+    def reward(self, reward):
+        """Clip rewards to be either -1, 0, or +1 based on the sign
+        """
+        return np.sign(reward)
 
 
 class AtariRescale(gym.ObservationWrapper):
@@ -161,24 +189,3 @@ class MaxAndSkipEnv(gym.Wrapper):
         obs = self.env.reset()
         self._obs_buffer.append(obs)
         return obs
-
-
-def make_env(env_id, env_conf):
-    env = gym.make(env_id)
-    if 'NoFrameskip' in env_id:
-        assert 'NoFrameskip' in env.spec.id
-        env = NoopResetEnv(env, noop_max=30)
-        env = MaxAndSkipEnv(env, skip=env_conf['skip_rate'])
-
-    if env_conf['episodic_life']:
-        env = EpisodicLifeEnv(env)
-
-    if 'FIRE' in env.unwrapped.get_action_meanings():
-        env = FireResetEnv(env)
-
-    env = AtariRescale(env, env_conf['useful_region'])
-    env = NormalizedEnv(env)
-
-    if env_conf['clip_reward']:
-        env = ClipRewardEnv(env)
-    return env
