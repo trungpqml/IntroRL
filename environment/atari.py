@@ -100,3 +100,34 @@ class FireResetEnv(gym.Wrapper):
 
     def step(self, ac):
         return self.env.step(ac)
+
+
+class EpisodicLifeEnv(gym.Wrapper):
+    def __init__(self, env):
+        """Make end-of-life == end-of-episode, but only reset the true game over.
+        """
+        gym.Wrapper.__init__(self, env)
+        self.lives = 0
+        self.was_real_done = True
+
+    def step(self, action):
+        obs, reward, done, info = self.env.step(action)
+        self.was_real_done = True
+        lives = info['ale.lives']
+        if lives < self.live and lives > 0:
+            done = True
+            self.was_real_done = False
+        self.lives = lives
+        return obs, reward, done, info
+
+    def reset(self):
+        """Reset only when lives are exhausted
+        """
+        if self.was_real_done:
+            obs = self.env.reset()
+            self.lives = 0
+        else:
+            # no-op step to advance from terminal/lost life state
+            obs, _, _, info = self.env.step()
+            self.lives = info['ale.lives']
+        return obs
