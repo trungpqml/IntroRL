@@ -53,4 +53,50 @@ class NormalizedEnv(gym.ObservationWrapper):
         unbiased_mean = self.state_mean/(1-pow(self.alpha, self.num_steps))
         unbiased_std = self.state_std/(1-pow(self.alpha, self.num_steps))
         return (observation-unbiased_mean)/(unbiased_std+1e-8)
-        
+
+
+class NoopResetEnv(gym.Wrapper):
+    def __init__(self, env, noop_max=30):
+        """Sample initial states by taking random number of no-ops on reset
+        No-op is assumed to be actions 0.
+        """
+        gym.Wrapper.__init__(self, env)
+        self.noop_max = noop_max
+        self.noop_action = 0
+        assert env.unwrapped.get_action_meanings()[0] == 'NOOP'
+
+    def reset(self):
+        """Do no-op action for a number of steps in [1, noop_max]
+        """
+        self.env.reset()
+        noops = random.randrange(1, self.noop_max + 1)
+        assert noops > 0
+        obs = None
+        for _ in range(noops):
+            obs, _, done, _ = self.env.step(self.noop_action)
+        return obs
+
+    def step(self, ac):
+        return self.env.step(ac)
+
+
+class FireResetEnv(gym.Wrapper):
+    def __init__(self, env):
+        """Take action on reset for environments that are fixed until firing
+        """
+        gym.Wrapper.__init__(self, env)
+        assert env.unwrapped.get_action_meanings()[1] == "FIRE"
+        assert len(env.unwrapped.get_action_meanings()) >= 3
+
+    def reset(self):
+        self.env.reset()
+        obs, _, done, _ = self.env.step(1)
+        if done:
+            self.env.reset()
+        obs, _, done, _ = self.env.step(2)
+        if done:
+            self.env.reset()
+        return obs
+
+    def step(self, ac):
+        return self.env.step(ac)
