@@ -13,6 +13,7 @@ from tensorboardX import SummaryWriter
 from datetime import datetime
 from argparse import ArgumentParser
 
+# Argument Parser Setting
 args = ArgumentParser("learner")
 args.add_argument(
     "--params-file", help="Path to the parameters JSON file. Default is parameters.json", default="parameters.json", type=str, metavar="PFILE")
@@ -31,6 +32,7 @@ args.add_argument("--recording-output-dir",
 
 args = args.parse_args()
 
+# Parameter Manager
 params_manager = ParamsManager(args.params_file)
 seed = params_manager.get_agent_params()['seed']
 summary_file_path_prefix = params_manager.get_agent_params()[
@@ -38,10 +40,15 @@ summary_file_path_prefix = params_manager.get_agent_params()[
 summary_file_path = summary_file_path_prefix + args.env + \
     "_" + datetime.now().strftime("%y-%m-%d-%H-%M")
 writer = SummaryWriter(summary_file_path)
+params_manager.export_env_params(summary_file_path + "/" + "env_params.json")
+params_manager.export_agent_params(
+    summary_file_path + "/" + "agent_params.json")
 
 global_step_num = 0
+
+# GPU Setting
 use_cuda = params_manager.get_agent_params()['use_cuda']
-device = torch.device("cuda" if torch.cuda.is_available()
+device = torch.device("cuda:" + str(args.gpu_id) if torch.cuda.is_available()
                       and use_cuda else "cpu")
 torch.manual_seed(seed)
 np.random.seed(seed)
