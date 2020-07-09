@@ -157,7 +157,7 @@ class EpisodicLifeEnv(gym.Wrapper):
             self.lives = 0
         else:
             # no-op step to advance from terminal/lost life state
-            obs, _, _, info = self.env.step()
+            obs, _, _, info = self.env.step(0)
             self.lives = info['ale.lives']
         return obs
 

@@ -38,10 +38,13 @@ params_manager = ParamsManager(args.params_file)
 seed = params_manager.get_agent_params()['seed']
 summary_file_path_prefix = params_manager.get_agent_params()[
     'summary_file_path_prefix']
-if not exists(summary_file_path_prefix):
-    makedirs(summary_file_path_prefix)
-summary_file_path = join(summary_file_path_prefix, args.env +
-                         '_' + datetime.now().strftime('%y-%m-%d-%H-%M'))
+
+summary_file_path = summary_file_path_prefix + args.env + \
+    '_' + datetime.now().strftime('%y-%m-%d-%H-%M')
+
+if not exists(summary_file_path):
+    makedirs(summary_file_path)
+
 writer = SummaryWriter(summary_file_path)
 params_manager.export_env_params(join(summary_file_path, 'env_params.json'))
 params_manager.export_agent_params(

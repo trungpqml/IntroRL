@@ -174,7 +174,7 @@ class DeepQLearner:
         self.training_steps_completed += 1
 
     def save(self, env_name):
-        if not exists self.params['save_dir']:
+        if not exists(self.params['save_dir']):
             makedirs(self.params['save_dir'])
         file_name = join(self.params['save_dir'], 'DQL_' + env_name + '.ptm')
         agent_state = {'Q': self.Q.state_dict(),

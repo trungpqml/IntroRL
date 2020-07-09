@@ -8,3 +8,5 @@
 gym_monitor_output/
 
 logs/
+
+trained_models/
