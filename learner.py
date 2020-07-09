@@ -1,5 +1,7 @@
 from datetime import datetime
 from argparse import ArgumentParser
+from os.path import join, exists
+from os import makedirs
 
 
 import gym
@@ -172,7 +174,9 @@ class DeepQLearner:
         self.training_steps_completed += 1
 
     def save(self, env_name):
-        file_name = self.params['save_dir'] + 'DQL_' + env_name + '.ptm'
+        if not exists self.params['save_dir']:
+            makedirs(self.params['save_dir'])
+        file_name = join(self.params['save_dir'], 'DQL_' + env_name + '.ptm')
         agent_state = {'Q': self.Q.state_dict(),
                        'best_mean_reward': self.best_mean_reward,
                        'best_reward': self.best_reward
