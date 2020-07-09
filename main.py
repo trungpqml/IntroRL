@@ -99,7 +99,8 @@ if __name__ == "__main__":
     action_shape = env.action_space.n
     agent_params = params_manager.get_agent_params()
     agent_params['test'] = args.test
-    agent = DeepQLearner(observation_shape, action_shape, agent_params)
+    agent = DeepQLearner(observation_shape, action_shape,
+                         agent_params, writer=writer,  device=device)
 
     episode_rewards = list()
     prev_checkpoint_mean_episode_reward = agent.best_mean_reward
@@ -150,7 +151,7 @@ if __name__ == "__main__":
                     num_improved_episodes_before_checkpoint = 0
 
                 print(
-                    f'Episode #{episode}\tend in {step+1} steps, reward = {cumulative_reward:.2f}, mean reward = {np.mean(episode_rewards):.3f}, best reward = {agent.best_reward}')
+                    f'Episode #{episode:5d} ends in {step+1:4d} steps, reward = {int(cumulative_reward):4d}, best_reward = {int(agent.best_reward):4d}, mean_reward = {np.mean(episode_rewards):.2f}')
                 writer.add_scalar('main/ep_reward',
                                   cumulative_reward, global_step_num)
                 writer.add_scalar('main/mean_ep_reward',
