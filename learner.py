@@ -1,22 +1,21 @@
 from datetime import datetime
 from argparse import ArgumentParser
+
+
 import gym
 import torch
 import random
 import numpy as np
+from tensorboardX import SummaryWriter
 
 import environment.atari as Atari
 import environment.utils as env_utils
-
 from utils.params_manager import ParamsManager
 from utils.decay_schedule import LinearDecayScheduler
 from utils.experience_memory import Experience, ExperienceMemory
 import utils.weights_initializer
-
 from function_approximator.perceptron import SLP
 from function_approximator.cnn import CNN
-
-from tensorboardX import SummaryWriter
 
 
 # Argument Parser Setting

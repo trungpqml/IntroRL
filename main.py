@@ -1,10 +1,21 @@
 from datetime import datetime
 from argparse import ArgumentParser
+from os.path import join, exists
+from os import makedirs
+
+import gym
+import torch
+import numpy as np
 from tensorboardX import SummaryWriter
+
+from utils.params_manager import ParamsManager
+import environment.atari as Atari
 from learner import DeepQLearner
+from utils.experience_memory import Experience
+
 
 # Argument Parser Setting
-args = ArgumentParser('learner')
+args = ArgumentParser('Atari Player')
 args.add_argument(
     '--params-file', help='Path to the parameters JSON file. Default is parameters.json', default='parameters.json', type=str, metavar='PFILE')
 args.add_argument(
@@ -18,7 +29,7 @@ args.add_argument('--test', help='Test mode. Used for playing without learning. 
 args.add_argument('--record', help="Enable recording (video & stat) of the agent's performance",
                   action='store_true', default=False)
 args.add_argument('--recording-output-dir',
-                  help='Directory to store monitor output. Default=./trained_models/results', default='./train_models/results')
+                  help='Directory to store monitor output. Default=./trained_models/results', default='./trained_models/results')
 
 args = args.parse_args()
 
@@ -27,12 +38,14 @@ params_manager = ParamsManager(args.params_file)
 seed = params_manager.get_agent_params()['seed']
 summary_file_path_prefix = params_manager.get_agent_params()[
     'summary_file_path_prefix']
-summary_file_path = summary_file_path_prefix + args.env + \
-    '_' + datetime.now().strftime('%y-%m-%d-%H-%M')
+if not exists(summary_file_path_prefix):
+    makedirs(summary_file_path_prefix)
+summary_file_path = join(summary_file_path_prefix, args.env +
+                         '_' + datetime.now().strftime('%y-%m-%d-%H-%M'))
 writer = SummaryWriter(summary_file_path)
-params_manager.export_env_params(summary_file_path + '/' + 'env_params.json')
+params_manager.export_env_params(join(summary_file_path, 'env_params.json'))
 params_manager.export_agent_params(
-    summary_file_path + '/' + 'agent_params.json')
+    join(summary_file_path, 'agent_params.json'))
 
 global_step_num = 0
 
