@@ -1,5 +1,5 @@
 # IntroRL
-A simple progam to play Atari games.
+A simple program to play Atari games.
 
 #### Clean up the output folder by running:
 ```
