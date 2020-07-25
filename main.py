@@ -6,6 +6,7 @@ from os import makedirs
 import gym
 import torch
 import numpy as np
+import environment.utils as env_utils
 from tensorboardX import SummaryWriter
 
 from utils.params_manager import ParamsManager
@@ -29,7 +30,7 @@ args.add_argument('--test', help='Test mode. Used for playing without learning. 
 args.add_argument('--record', help="Enable recording (video & stat) of the agent's performance",
                   action='store_true', default=False)
 args.add_argument('--recording-output-dir',
-                  help='Directory to store monitor output. Default=./trained_models/results', default='./trained_models/results')
+                  help='Directory to store monitor output. Default=./gym_monitor_output', default='./gym_monitor_output')
 
 args = args.parse_args()
 
@@ -93,6 +94,8 @@ if __name__ == "__main__":
         env = env_utils.ResizeReshapeFrames(gym.make(args.env))
 
     if args.record:
+        if not exists(args.recording_output_dir):
+            makedirs(args.recording_output_dir)
         env = gym.wrappers.Monitor(env, args.recording_output_dir, force=True)
 
     observation_shape = env.observation_space.shape
