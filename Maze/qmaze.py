@@ -16,6 +16,7 @@ class Qmaze(object):
             raise Exception('Invalid maze, target cell cannot be blocked!')
         if not rat in self.free_cells:
             raise Exception('Invalid rat location: must sit on a free cell.')
+        self.reset(rat)
 
     def reset(self, rat):
         self.rat = rat
