@@ -1,6 +1,6 @@
 class Config:
-    visited_mark = 0.8
-    rat_mark = 0.5
+    visited_mark = 0.8 # color value of visited mark
+    rat_mark = 0.5 # color value of rat position
     LEFT = 0
     UP = 1
     RIGHT = 2
