@@ -18,6 +18,10 @@ class Config:
 
     num_actions = len(action_dict)
     epsilon = 0.1  # exporation factor
+    n_epochs = 15000
+    max_memory = 1000
+    data_size = 50
+    weights_file = ''
 
     maze = np.array([
         [1.,  0.,  1.,  1.,  1.,  1.,  1.,  1.],
